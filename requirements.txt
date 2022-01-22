@@ -1,0 +1,2 @@
+paramiko~=2.9.2
+prometheus-client~=0.12.0
