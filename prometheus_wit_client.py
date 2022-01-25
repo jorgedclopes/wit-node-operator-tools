@@ -46,7 +46,7 @@ if __name__ == '__main__':
     for container in interesting_containers:
         nodes_gauge_list.append(
             prometheus_client.Gauge(
-                'Proposed blocks' + container.name,
+                'Proposed_blocks_' + container.name,
                 'Proposed blocks'))
 
     print()
