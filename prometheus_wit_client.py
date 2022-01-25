@@ -30,7 +30,7 @@ def process_request(container_list,
 
 
 def get_proposed_blocks(string):
-    return int(re.search('Proposed blocks: (.*)\n'), string)
+    return int(re.search('Proposed blocks: (.*)\n', string).group(1))
 
 
 def check_pattern_in_tags(string: str, str_list: List[str]):
