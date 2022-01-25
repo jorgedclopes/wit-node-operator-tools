@@ -1,29 +1,30 @@
 import prometheus_client
-import random
 import time
 import logging
 import docker
 from typing import List
-from functools import reduce
 
 required_container = 'witnet/witnet-rust'
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
-g = prometheus_client.Gauge('my_in_progress_requests', 'Description of gauge')
-g2 = prometheus_client.Gauge('my_in_progress_requests2', 'Description of gauge')
+logger.setLevel(logging.DEBUG)
 
 
 # Decorate function with metric.
-def process_request():
+def process_request(container_list,
+                    gauge_list,
+                    func):
     """A dummy function that sets the gauge."""
-    output = random.randint(0, 10)
-    g.set(output)
-    logger.info("Random number generated = %s", output)
-    output = random.randint(0, 10)
-    g2.set(output)
-    logger.info("Random number generated = %s", output)
+
+    if not container_list:
+        logger.error('No containers of interest provided')
+
+    for c, gauge in zip(container_list, gauge_list):
+        _, output = c.exec_run('witnet node nodeStats')
+        logger.debug(output)
+        interesting_value = func(output)
+        gauge.set(interesting_value)
     time.sleep(10)
 
 
@@ -32,17 +33,26 @@ def check_pattern_in_tags(string: str, str_list: List[str]):
 
 
 if __name__ == '__main__':
+    nodes_gauge_list = []
     # Start up the server to expose the metrics.
     client = docker.from_env()
-    for container in client.containers.list():
-        is_witnet_node = check_pattern_in_tags(required_container, container.image.tags)
-        print(container.image.tags)
-        print(is_witnet_node)
-        print(container.name)
-    # print(docker_result.stderr)
+
+    # Assuming the nodes on the server don't change
+    interesting_containers = list(filter(lambda el:
+                                         check_pattern_in_tags(required_container,
+                                                               el.image.tags),
+                                         client.containers.list()))
+
+    for container in interesting_containers:
+        nodes_gauge_list.append(
+            prometheus_client.Gauge(
+                'Proposed blocks' + container.name,
+                'Proposed blocks'))
+
     print()
-    exit()
+    print(interesting_containers)
+
     prometheus_client.start_http_server(8000)
     # Generate some requests.
     while True:
-        process_request()
+        process_request(interesting_containers, nodes_gauge_list, lambda x: x)
