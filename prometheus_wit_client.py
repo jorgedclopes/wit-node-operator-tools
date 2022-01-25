@@ -3,6 +3,7 @@ import time
 import logging
 import docker
 from typing import List
+import re
 
 required_container = 'witnet/witnet-rust'
 
@@ -23,9 +24,13 @@ def process_request(container_list,
     for c, gauge in zip(container_list, gauge_list):
         _, output = c.exec_run('witnet node nodeStats')
         logger.debug(output)
-        interesting_value = func(output)
+        interesting_value = func(output.decode('utf-8'))
         gauge.set(interesting_value)
     time.sleep(10)
+
+
+def get_proposed_blocks(string):
+    re.search('Proposed blocks: (.*)\n')
 
 
 def check_pattern_in_tags(string: str, str_list: List[str]):
