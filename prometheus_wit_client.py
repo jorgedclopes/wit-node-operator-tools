@@ -30,7 +30,7 @@ def process_request(container_list,
 
 
 def get_proposed_blocks(string):
-    re.search('Proposed blocks: (.*)\n')
+    return int(re.search('Proposed blocks: (.*)\n'))
 
 
 def check_pattern_in_tags(string: str, str_list: List[str]):
@@ -60,4 +60,4 @@ if __name__ == '__main__':
     prometheus_client.start_http_server(8000)
     # Generate some requests.
     while True:
-        process_request(interesting_containers, nodes_gauge_list, lambda x: x)
+        process_request(interesting_containers, nodes_gauge_list, get_proposed_blocks)
