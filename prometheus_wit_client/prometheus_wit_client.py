@@ -57,8 +57,8 @@ class WitnetMetrics:
             ('Blocks_in_blockchain' + '_' + container.name).replace('-', '_'),
             'Blocks_in_blockchain')
         self.eligibility_times = prometheus_client.Gauge(
-            ('Times_elegible' + '_' + container.name).replace('-', '_'),
-            'Times_elegible')
+            ('Times_eligible' + '_' + container.name).replace('-', '_'),
+            'Times_eligible')
         self.proposed_commits = prometheus_client.Gauge(
             ('Proposed_commits' + '_' + container.name).replace('-', '_'),
             'Proposed_commits')
