@@ -109,9 +109,9 @@ class WitnetMetrics:
 
         _, output_reputation = self._container.exec_run('witnet node reputation')
         interesting_value = search_from_pattern(output_reputation.decode('utf-8'),
-                                                'Proposed blocks: ',
+                                                'Reputation: ',
                                                 '\n')
-        self.proposed_block.set(interesting_value)
+        self.reputation.set(interesting_value)
 
         interesting_value = search_from_pattern(output_reputation.decode('utf-8'),
                                                 'Eligibility: ',
