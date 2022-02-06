@@ -46,6 +46,7 @@ class WitnetMetrics:
     accepted_commits = None
     slashed_commits = None
     reputation = None
+    eligibility_percentage = None
 
     def __init__(self, container):
         self._container = container
@@ -68,8 +69,11 @@ class WitnetMetrics:
             ('Slashed_commits' + '_' + container.name).replace('-', '_'),
             'Slashed_commits')
         self.reputation = prometheus_client.Gauge(
-            ('Reputation_list' + '_' + container.name).replace('-', '_'),
-            'Reputation_list')
+            ('Reputation' + '_' + container.name).replace('-', '_'),
+            'Reputation')
+        self.eligibility_percentage = prometheus_client.Gauge(
+            ('Eligibility_Percentage' + '_' + container.name).replace('-', '_'),
+            'Eligibility_Percentage')
 
     # Decorate function with metric.
     def process_request(self):
@@ -116,7 +120,7 @@ class WitnetMetrics:
         interesting_value = search_from_pattern(output_reputation.decode('utf-8'),
                                                 'Eligibility: ',
                                                 '%\n')
-        self.proposed_block.set(interesting_value)
+        self.eligibility_percentage.set(interesting_value)
 
         logging.info('Metrics Updated!')
 
