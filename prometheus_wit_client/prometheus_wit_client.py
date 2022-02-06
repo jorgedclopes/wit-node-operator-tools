@@ -27,6 +27,7 @@ def search_from_pattern(string,
                      .group(1))
     except Exception as e:
         logging.warning('{e}'.format(e=str(e)))
+        logging.warning('Trying to find between {} and {} in {}', begin, end, string)
         return -1
 
 
@@ -47,7 +48,7 @@ class WitnetMetrics:
     reputation = None
 
     def __init__(self, container):
-        _container = container
+        self._container = container
         self.proposed_block = prometheus_client.Gauge(
             ('Proposed_blocks' + '_' + container.name).replace('-', '_'),
             'Proposed blocks')
@@ -118,7 +119,6 @@ class WitnetMetrics:
         self.proposed_block.set(interesting_value)
 
         logging.info('Metrics Updated!')
-        time.sleep(10)
 
 
 if __name__ == '__main__':
@@ -144,3 +144,4 @@ if __name__ == '__main__':
     while True:
         for metric in Witnet_metrics_list:
             metric.process_request()
+        time.sleep(10)
