@@ -1,5 +1,7 @@
 # Change Log
 
+### 0.2.0
+Add 
 ### 0.1.1
 Add bash script to start 8 Witnet mining nodes.
 

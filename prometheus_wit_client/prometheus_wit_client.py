@@ -122,10 +122,12 @@ class WitnetMetrics:
                                                 '%\n')
         self.eligibility_percentage.set(interesting_value)
 
-        logging.info('Metrics Updated!')
+        logging.info('Metric Updated!')
 
 
 if __name__ == '__main__':
+    logging.info('Starting application.')
+
     # Start up the server to expose the metrics.
     client = docker.from_env()
 
@@ -136,16 +138,16 @@ if __name__ == '__main__':
                                          client.containers.list()))
 
     logging.info(interesting_containers)
-    if not interesting_containers:
-        logging.error('No containers of interest provided')
-        exit()
+    Witnet_metrics_list = [WitnetMetrics(container) for container in interesting_containers]
 
-    Witnet_metrics_list = list(map(lambda container: WitnetMetrics(container),
-                                   interesting_containers))
-
+    logging.info('Starting server')
     prometheus_client.start_http_server(8000)
     # Generate some requests.
     while True:
-        for metric in Witnet_metrics_list:
-            metric.process_request()
+        if not interesting_containers:
+            logging.error('No containers of interest provided')
+        for container in Witnet_metrics_list:
+            container.process_request()
+
+        logging.info('Metrics refreshed.')
         time.sleep(10)

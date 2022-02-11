@@ -1,0 +1,9 @@
+---
+- hostname: 123.456.7.890
+  username: admin
+  password: something
+  number_of_nodes: 8
+- hostname: 123.456.7.890
+  username: admin
+  password: something
+  number_of_nodes: 9
