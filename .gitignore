@@ -1,2 +1,2 @@
 .idea
-prometheus_wit_client/__init__.py
+setup_server/*.yaml
