@@ -35,7 +35,9 @@ if __name__ == '__main__':
         if not address.startswith('wit'):
             logging.warning('Wallet is not valid. Skipping...')
             continue
-        command = "witnet node send --fee={} --value={} --address={}".format(fee, float(wit_amount) * 10**9, address)
+        command = "witnet node send --fee={} --value={} --address={}".format(fee,
+                                                                             int(float(wit_amount) * 10**9),
+                                                                             address)
         logging.info("Command - {}".format(command))
         _, output = container.exec_run(command)
         logging.info("Output - {}".format(output))
