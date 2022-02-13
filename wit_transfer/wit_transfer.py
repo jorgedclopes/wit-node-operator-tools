@@ -5,7 +5,7 @@ import sys
 logging.basicConfig(level=logging.INFO)
 
 # HOW TO CALL
-# python wit_transfer.py __container_name__ __wit_amount__
+# python3 wit_transfer.py __container_name__ __wit_amount__
 if __name__ == '__main__':
     logging.info('Starting application.')
 
@@ -31,9 +31,9 @@ if __name__ == '__main__':
 
     logging.info('Starting transfers.')
     for address in address_list:
-        command = "witnet node send --fee={} --value={} --address={}".format(fee, wit_amount * 10**9, address)
+        command = "witnet node send --fee={} --value={} --address={}".format(fee, float(wit_amount) * 10**9, address)
         print("Command - {}".format(command))
-        # container.exec_run(command)
+        container.exec_run(command)
 
     logging.info('Transfers completed.')
-    print(container.exec_run("pwd"))
+
