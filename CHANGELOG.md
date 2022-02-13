@@ -1,5 +1,7 @@
 # Change Log
 
+### 0.2.1
+ - Fix issues with wit_transfer.
 ### 0.2.0
  - Add internal test servers to prometheus config file. Start implementation to probe witnet node containers.
  - Add docker compose and config files for prometheus and grafana. Add python prometheus basic metric generator.

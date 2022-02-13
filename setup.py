@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='wit-node-operator-tools',
-    version='0.2.0',
+    version='0.2.1',
     packages=setuptools.find_packages(),
     url='',
     license='',
