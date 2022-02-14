@@ -1,4 +1,6 @@
 import logging
+import time
+
 import docker
 import sys
 
@@ -41,6 +43,7 @@ if __name__ == '__main__':
         logging.info("Command - {}".format(command))
         _, output = container.exec_run(command)
         logging.info("Output - {}".format(output))
+        time.sleep(120)
 
     logging.info('Transfers completed.')
 
