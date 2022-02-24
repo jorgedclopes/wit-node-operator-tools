@@ -30,5 +30,7 @@ jobs:
         echo $($DOCKER_IMAGE_ALREADY_PUSHED -ne 0)
         if [ $DOCKER_IMAGE_ALREADY_PUSHED -ne 0 ]; then
           docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
-          echo "IMAGE PUSHED"
+          echo "IMAGE PUSHED";
+        else
+          echo "IMAGE NOT PUSHED - ALREADY PRESENT PREVIOUSLY";
         fi
