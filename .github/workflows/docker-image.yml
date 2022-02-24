@@ -26,6 +26,6 @@ jobs:
     - name: Push the Docker image
       run: |
         docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_PASSWORD}} docker.io
-        if [ ! $(docker manifest inspect carequinha/prometheus_wit_client:${{ env.VERSION }} > /dev/null; echo $?)]; then
+        if [ ! $(docker manifest inspect carequinha/prometheus_wit_client:${{ env.VERSION }} > /dev/null; echo $?) ]; then
           docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
         fi
