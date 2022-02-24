@@ -18,9 +18,9 @@ jobs:
       with: 
         python-version: 3.7.5
     - name: Get Project Version
-      run: |
-        VERSION=${{python3 setup.py --version}}
-        echo VERSION
+      env:
+        VERSION: ${{python3 setup.py --version}}
+      run: echo VERSION
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag prometheus_wit_client:$VERSION
     - name: Push the Docker image
