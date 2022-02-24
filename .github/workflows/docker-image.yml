@@ -19,7 +19,7 @@ jobs:
         python-version: 3.7.5
     - name: Get Project Version
       run: |
-        VERSION=$(python setup.py --version) >> $GITHUB_ENV
+        echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
         echo env.VERSION
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:${{ env.VERSION }} --tag carequinha/prometheus_wit_client:latest
