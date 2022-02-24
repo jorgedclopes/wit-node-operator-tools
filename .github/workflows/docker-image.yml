@@ -22,6 +22,6 @@ jobs:
         VERSION=$(python setup.py --version) >> $GITHUB_ENV
         echo env.VERSION
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:env.VERSION --tag carequinha/prometheus_wit_client:latest
+      run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:${{ env.VERSION }} --tag carequinha/prometheus_wit_client:latest
     - name: Push the Docker image
-      run: docker push carequinha/prometheus_wit_client:env.VERSION
+      run: docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
