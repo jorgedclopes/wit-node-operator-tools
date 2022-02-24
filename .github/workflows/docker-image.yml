@@ -22,6 +22,6 @@ jobs:
         VERSION=$(python setup.py --version)
         echo VERSION
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag prometheus_wit_client:$VERSION
+      run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:$VERSION --tag carequinha/prometheus_wit_client:latest
     - name: Push the Docker image
       run: docker push carequinha/prometheus_wit_client:$VERSION
