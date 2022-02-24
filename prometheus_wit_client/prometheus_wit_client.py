@@ -47,6 +47,7 @@ class WitnetMetrics:
     slashed_commits = None
     reputation = None
     eligibility_percentage = None
+    peer_number = None
 
     def __init__(self, container):
         self._container = container
@@ -74,6 +75,9 @@ class WitnetMetrics:
         self.eligibility_percentage = prometheus_client.Gauge(
             ('Eligibility_Percentage' + '_' + container.name).replace('-', '_'),
             'Eligibility_Percentage')
+        self.peer_number = prometheus_client.Gauge(
+            ('Peer_Number' + '_' + container.name).replace('-', '_'),
+            'Peer_Number')
 
     # Decorate function with metric.
     def process_request(self):
@@ -81,46 +85,52 @@ class WitnetMetrics:
 
         _, output = self._container.exec_run('witnet node nodeStats')
         logging.debug(output)
-        interesting_value = search_from_pattern(output.decode('utf-8'),
-                                                'Proposed blocks: ',
-                                                '\n')
-        self.proposed_block.set(interesting_value)
+        proposed_blocks = search_from_pattern(output.decode('utf-8'),
+                                              'Proposed blocks: ',
+                                              '\n')
+        self.proposed_block.set(proposed_blocks)
 
-        interesting_value = search_from_pattern(output.decode('utf-8'),
-                                                'Blocks included in the block chain: ',
-                                                '\n')
-        self.blocks_in_blockchain.set(interesting_value)
+        blocks_in_blockchain = search_from_pattern(output.decode('utf-8'),
+                                                   'Blocks included in the block chain: ',
+                                                   '\n')
+        self.blocks_in_blockchain.set(blocks_in_blockchain)
 
-        interesting_value = search_from_pattern(output.decode('utf-8'),
+        eligibility_times = search_from_pattern(output.decode('utf-8'),
                                                 'Times with eligibility to mine a data request: ',
                                                 '\n')
-        self.eligibility_times.set(interesting_value)
+        self.eligibility_times.set(eligibility_times)
 
-        interesting_value = search_from_pattern(output.decode('utf-8'),
-                                                'Proposed commits: ',
-                                                '\n')
-        self.proposed_commits.set(interesting_value)
+        proposed_commits = search_from_pattern(output.decode('utf-8'),
+                                               'Proposed commits: ',
+                                               '\n')
+        self.proposed_commits.set(proposed_commits)
 
-        interesting_value = search_from_pattern(output.decode('utf-8'),
-                                                'Accepted commits: ',
-                                                '\n')
-        self.accepted_commits.set(interesting_value)
+        accepted_commits = search_from_pattern(output.decode('utf-8'),
+                                               'Accepted commits: ',
+                                               '\n')
+        self.accepted_commits.set(accepted_commits)
 
-        interesting_value = search_from_pattern(output.decode('utf-8'),
-                                                'Slashed commits: ',
-                                                '\n')
-        self.slashed_commits.set(interesting_value)
+        slashed_commits = search_from_pattern(output.decode('utf-8'),
+                                              'Slashed commits: ',
+                                              '\n')
+        self.slashed_commits.set(slashed_commits)
 
         _, output_reputation = self._container.exec_run('witnet node reputation')
-        interesting_value = search_from_pattern(output_reputation.decode('utf-8'),
-                                                'Reputation: ',
-                                                ', ')
-        self.reputation.set(interesting_value)
+        reputation = search_from_pattern(output_reputation.decode('utf-8'),
+                                         'Reputation: ',
+                                         ', ')
+        self.reputation.set(reputation)
 
-        interesting_value = search_from_pattern(output_reputation.decode('utf-8'),
-                                                'Eligibility: ',
-                                                '%\n')
-        self.eligibility_percentage.set(interesting_value)
+        eligibility_percentage = search_from_pattern(output_reputation.decode('utf-8'),
+                                                     'Eligibility: ',
+                                                     '%\n')
+        self.eligibility_percentage.set(eligibility_percentage)
+
+        _, output_peers = self._container.exec_run('witnet node peers')
+        peer_number = len(list(
+            filter(lambda lstr: "outbound" in lstr, output_peers.split('\n'))
+        ))
+        self.peer_number.set(peer_number)
 
         logging.info('Metric Updated!')
 
