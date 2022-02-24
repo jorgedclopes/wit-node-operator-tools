@@ -15,7 +15,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Get Project Version
-      run: VERSION=$(python3 setup.py --version)
+      run: |
+        VERSION=${{python3 setup.py --version}}
+        echo VERSION
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag prometheus_wit_client:$VERSION
     - name: Push the Docker image
