@@ -3,6 +3,8 @@ name: Docker Image CI
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
 
@@ -15,19 +17,17 @@ jobs:
     - uses: actions/setup-python@v2
       with: 
         python-version: 3.7.5
-    - name: Get Project Version
+    - name: Get Project Version & Check if image version already exists
       run: |
         echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
         echo env.VERSION
+        echo "DOCKER_IMAGE_ALREADY_PUSHED=$(docker manifest inspect carequinha/prometheus_wit_client:${{ env.VERSION }} > /dev/null; echo $?)" >> $GITHUB_ENV
     - name: Build the Docker image
+      if: ${{ env.DOCKER_IMAGE_ALREADY_PUSHED != 0 }}
       run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:${{ env.VERSION }} --tag carequinha/prometheus_wit_client:latest
     - name: Push the Docker image
+      if: ${{ env.DOCKER_IMAGE_ALREADY_PUSHED != 0 }}
       run: |
         docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_PASSWORD}} docker.io
-        DOCKER_IMAGE_ALREADY_PUSHED=$(docker manifest inspect carequinha/prometheus_wit_client:${{ env.VERSION }} > /dev/null; echo $?)
-        if [ $DOCKER_IMAGE_ALREADY_PUSHED -ne 0 ]; then
-          docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
-          echo "IMAGE PUSHED";
-        else
-          echo "IMAGE NOT PUSHED - ALREADY PRESENT PREVIOUSLY";
+        docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
         fi
