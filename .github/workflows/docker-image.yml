@@ -20,8 +20,9 @@ jobs:
     - name: Get Project Version & Check if image version already exists
       run: |
         echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
-        echo env.VERSION
+        echo ${{ env.VERSION }}
         echo "DOCKER_IMAGE_ALREADY_PUSHED=$(docker manifest inspect carequinha/prometheus_wit_client:${{ env.VERSION }} > /dev/null; echo $?)" >> $GITHUB_ENV
+        echo ${{ env.DOCKER_IMAGE_ALREADY_PUSHED }}
     - name: Build the Docker image
       if: ${{ env.DOCKER_IMAGE_ALREADY_PUSHED != 0 }}
       run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:${{ env.VERSION }} --tag carequinha/prometheus_wit_client:latest
