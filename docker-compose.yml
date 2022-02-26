@@ -7,6 +7,7 @@ volumes:
 services:
   prometheus:
     image: prom/prometheus:v2.1.0
+    container_name: prometheus
     user: '0'
     volumes:
       - ~/.prometheus/:/etc/prometheus/
@@ -24,6 +25,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager
+    container_name: alertmanager
     ports:
       - 9093:9093
     volumes:
@@ -47,6 +49,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    container_name: grafana
     user: "0"
     depends_on:
       - prometheus
