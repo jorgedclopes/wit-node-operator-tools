@@ -1,8 +1,9 @@
 import setuptools
+import prometheus_wit_client
 
 setuptools.setup(
     name='wit-node-operator-tools',
-    version='0.2.1',
+    version=prometheus_wit_client.version,
     packages=setuptools.find_packages(),
     url='',
     license='',

@@ -1,9 +1,11 @@
 import logging
+import os
 import time
 
 import paramiko
 import yaml
-from paramiko.ssh_exception import SSHException
+
+from prometheus_wit_client import version
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +21,6 @@ def safe_connect(ssh: paramiko.SSHClient,
                            username=username,
                            password=password)
     except paramiko.ssh_exception.AuthenticationException as e:
-        logging.warning()
         logging.warning(e)
         time.sleep(1)
         safe_connect(ssh=ssh,
@@ -54,39 +55,64 @@ def print_test(ssh):
 
 
 def run():
-    file = open('setup_server/list_of_servers.yaml', 'r')
-    content = yaml.safe_load(file)
+    root_dir = os.path.abspath(os.curdir)
+    file = open(os.path.join(root_dir, 'list_of_servers.yaml'), 'r')
+    servers = yaml.safe_load(file)
 
-    print(content)
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    for d in content:
-        print(d)
-        try:
-            ssh.connect(hostname=d.get('hostname'),
-                        port=22,
-                        username=d.get('username'),
-                        password=d.get('password'))
-            logging.info("Connected!")
+    for server in servers:
+        logging.info("  Processing server {}".format(server.get('hostname')))
+        ssh.connect(hostname=server.get('hostname'),
+                    port=22,
+                    username=server.get('username'),
+                    password=server.get('password'))
 
-            initial_setup(ssh)
-            ssh.exec_command("sudo reboot")
-            print_test(ssh)
-
-            ssh.close()
-            logging.info("Connection closed!")
-
-            safe_connect(ssh,
-                         hostname=d.get('hostname'),
-                         port=22,
-                         username=d.get('username'),
-                         password=d.get('password'))
-        except Exception as e:
-            print(e)
-            print(type(e))
-            raise e
+        get_images_command = "sudo docker container ls --format \"{{.Image}}\""
+        _, stdout, stderr = ssh.exec_command(get_images_command)
+        images_list = stdout.readlines()
+        filtered_var = list(filter(lambda image: "prometheus_wit_client" in image, images_list))
+        is_client_container_running = bool(filtered_var)
+        if not is_client_container_running:
+            logging.info('Client not running. Starting...')
+            run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
+                                            -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
+                                            --restart always carequinha/prometheus_wit_client:{}"\
+                .format(version)
+            _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
+            print("Output: {}".format(stdout.readline()))
+            print("Errput: {}".format(stderr.readline()))
+        else:
+            logging.warning('Client already running. Nothing to be done.')
+        ssh.close()
     return
+
+
+def reboot_reconnect(server, ssh):
+    try:
+        ssh.connect(hostname=server.get('hostname'),
+                    port=22,
+                    username=server.get('username'),
+                    password=server.get('password'))
+        logging.info("Connected!")
+
+        initial_setup(ssh)
+        ssh.exec_command("sudo reboot")
+        print_test(ssh)
+
+        ssh.close()
+        logging.info("Connection closed!")
+
+        safe_connect(ssh,
+                     hostname=server.get('hostname'),
+                     port=22,
+                     username=server.get('username'),
+                     password=server.get('password'))
+    except Exception as e:
+        print(e)
+        print(type(e))
+        raise e
 
 
 if __name__ == '__main__':
