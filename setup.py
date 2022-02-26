@@ -1,8 +1,9 @@
 import setuptools
+import setup_server
 
 setuptools.setup(
     name='wit-node-operator-tools',
-    version='1.1.0',
+    version=setup_server.version,
     packages=setuptools.find_packages(),
     url='',
     license='',

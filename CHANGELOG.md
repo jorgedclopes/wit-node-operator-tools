@@ -1,5 +1,9 @@
 # Change Log
 
+### 1.1.0
+ - Add metrics to the wit prometheus client
+ - Add CI - Automatic compile and push docker image.
+
 ### 0.2.1
  - Fix issues with wit_transfer.
 ### 0.2.0
