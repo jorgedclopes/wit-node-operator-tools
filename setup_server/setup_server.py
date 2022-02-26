@@ -5,7 +5,7 @@ import time
 import paramiko
 import yaml
 
-from __init__ import version
+from prometheus_wit_client import version
 
 logging.basicConfig(level=logging.INFO)
 
@@ -63,6 +63,7 @@ def run():
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     for server in servers:
+        logging.info("  Processing server {}".format(server.get('hostname')))
         ssh.connect(hostname=server.get('hostname'),
                     port=22,
                     username=server.get('username'),
@@ -73,16 +74,18 @@ def run():
         images_list = stdout.readlines()
         filtered_var = list(filter(lambda image: "prometheus_wit_client" in image, images_list))
         is_client_container_running = bool(filtered_var)
-        if is_client_container_running:
+        if not is_client_container_running:
             logging.info('Client not running. Starting...')
             run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
                                             -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
-                                            --restart always carequinha/prometheus_wit_client:{}".format(version)
+                                            --restart always carequinha/prometheus_wit_client:{}"\
+                .format(version)
             _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
             print("Output: {}".format(stdout.readline()))
             print("Errput: {}".format(stderr.readline()))
         else:
             logging.warning('Client already running. Nothing to be done.')
+        ssh.close()
     return
 
 

@@ -128,7 +128,7 @@ class WitnetMetrics:
 
         _, output_peers = self._container.exec_run('witnet node peers')
         peer_number = len(list(
-            filter(lambda lstr: "outbound" in lstr, output_peers.split('\n'))
+            filter(lambda lstr: "outbound" in lstr.decode("UTF-8"), output_peers.split('\n'))
         ))
         self.peer_number.set(peer_number)
 
