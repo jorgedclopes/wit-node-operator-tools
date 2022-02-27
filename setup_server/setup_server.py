@@ -1,11 +1,13 @@
 import logging
 import os
 import shutil
-import time
+from typing import List
+
 import docker
 
 import paramiko
 import yaml
+import argparse
 
 from prometheus_wit_client import version, prometheus_config_file_path
 
@@ -13,17 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 
-def print_test(ssh):
-    _, stdout, _ = ssh.exec_command("ls -al")
-    output = ""
-    for line in stdout.readlines():
-        output = output + line
-    print(output)
-    return
-
-
-def config_prometheus(server_list):
-    root_dir = os.path.abspath(os.curdir)
+def config_prometheus(server_list: List[str]):
+    root_dir = os.path.abspath(os.path.dirname(__file__))
     prometheus_file = open(os.path.join(root_dir, prometheus_config_file_path), 'r')
     prometheus_config = yaml.safe_load(prometheus_file)
     prometheus_file.close()
@@ -43,17 +36,57 @@ def config_prometheus(server_list):
     return
 
 
-def run():
-    root_dir = os.path.abspath(os.curdir)
-    file = open(os.path.join(root_dir, 'list_of_servers.yml'), 'r')
-    servers = yaml.safe_load(file)
-
+def deploy_prometheus_custom_metrics(server: dict,
+                                     overwrite: bool):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    port = 8000
+    logging.info("  Processing server {}".format(server.get('hostname')))
+    ssh.connect(hostname=server.get('hostname'),
+                port=22,
+                username=server.get('username'),
+                password=server.get('password'))
+
+    get_images_command = "sudo docker container ls --format \"{{.Image}}\""
+    _, stdout, stderr = ssh.exec_command(get_images_command)
+    images_list = stdout.readlines()
+    filtered_var = [image for image in images_list if "prometheus_wit_client" in image]
+    is_client_container_running = bool(filtered_var)
+
+    if is_client_container_running and overwrite:
+        ssh.exec_command('sudo docker stop prometheus_wit_client')
+        ssh.exec_command('sudo docker rm prometheus_wit_client')
+        is_client_container_running = False
+        logging.info("Deleted prometheus container. Preparing to redeploy.")
+
+    if not is_client_container_running:
+        logging.info('Client not running. Starting...')
+        run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
+                                            -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
+                                            --restart always carequinha/prometheus_wit_client:{}" \
+            .format(version)
+        _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
+        print("Output: {}".format(stdout.readline()))
+        print("Errput: {}".format(stderr.readline()))
+    else:
+        logging.warning('Client already running. Nothing to be done.')
+
+    ssh.close()
+    return
+
+
+def run(port: int,
+        list_of_servers: str,
+        overwrite: bool):
+    root_dir = os.path.abspath(os.path.dirname(__file__))
+    servers_file_path = os.path.join(root_dir, list_of_servers)
+    os.path.isfile(servers_file_path)
+    file = open(servers_file_path, 'r')
+    servers = yaml.safe_load(file)
+
     server_list = ["{}:{}".format(s.get('hostname'), port) for s in servers]
     logging.info(server_list)
+
     config_prometheus(server_list)
 
     prometheus_dest_dir = os.path.expanduser("~/.prometheus/")
@@ -70,32 +103,19 @@ def run():
             logging.warning(e)
             pass
 
+    # TODO: add overwrite server option
     for server in servers:
-        logging.info("  Processing server {}".format(server.get('hostname')))
-        ssh.connect(hostname=server.get('hostname'),
-                    port=22,
-                    username=server.get('username'),
-                    password=server.get('password'))
-
-        get_images_command = "sudo docker container ls --format \"{{.Image}}\""
-        _, stdout, stderr = ssh.exec_command(get_images_command)
-        images_list = stdout.readlines()
-        filtered_var = [image for image in images_list if "prometheus_wit_client" in image]
-        is_client_container_running = bool(filtered_var)
-        if not is_client_container_running:
-            logging.info('Client not running. Starting...')
-            run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
-                                            -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
-                                            --restart always carequinha/prometheus_wit_client:{}" \
-                .format(version)
-            _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
-            print("Output: {}".format(stdout.readline()))
-            print("Errput: {}".format(stderr.readline()))
-        else:
-            logging.warning('Client already running. Nothing to be done.')
-        ssh.close()
+        deploy_prometheus_custom_metrics(server, overwrite)
     return
 
 
 if __name__ == '__main__':
-    run()
+    arg_parser = argparse.ArgumentParser(description='Setup a list of servers. File is passed as an argument.')
+    arg_parser.add_argument('--config', action='store',
+                            dest='list_of_servers', default='list_of_servers.yml',
+                            help='Pass the relative file path with the list of servers. Default: list_of_servers.yml')
+    arg_parser.add_argument('--overwrite-servers', action='store_true',
+                            dest='overwrite_servers', default=False,
+                            help='Overwrite the server if there\'s already one deployed')
+    arguments = arg_parser.parse_args()
+    run(8000, arguments.list_of_servers, arguments.overwrite_servers)

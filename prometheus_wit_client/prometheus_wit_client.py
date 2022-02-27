@@ -26,15 +26,14 @@ def search_from_pattern(string,
                                string)
                      .group(1))
     except Exception as e:
-        logging.warning('{e}'.format(e=str(e)))
+        logging.warning(e)
         logging.warning('Trying to find between {} and {} in {}', begin, end, string)
         return -1
 
 
 def check_pattern_in_tags(string: str,
                           str_list: List[str]):
-    return any(map(lambda el: string in el,
-                   str_list))
+    return any([string in el for el in str_list])
 
 
 class WitnetMetrics:
@@ -48,6 +47,7 @@ class WitnetMetrics:
     reputation = None
     eligibility_percentage = None
     peer_number = None
+    balance = None
 
     def __init__(self, container):
         self._container = container
@@ -78,6 +78,9 @@ class WitnetMetrics:
         self.peer_number = prometheus_client.Gauge(
             ('Peer_Number' + '_' + container.name).replace('-', '_'),
             'Peer_Number')
+        self.balance = prometheus_client.Gauge(
+            ('Balance' + '_' + container.name).replace('-', '_'),
+            'Balance')
 
     # Decorate function with metric.
     def process_request(self):
@@ -133,6 +136,12 @@ class WitnetMetrics:
         ))
         self.peer_number.set(peer_number)
 
+        _, output_peers = self._container.exec_run('witnet node peers')
+        balance = search_from_pattern(output_reputation.decode('utf-8'),
+                                      '',
+                                      ' wits\n')
+        self.balance.set(balance)
+
         logging.info('Metric Updated!')
 
 
@@ -143,10 +152,8 @@ if __name__ == '__main__':
     client = docker.from_env()
 
     # Assuming the nodes on the server don't change
-    interesting_containers = list(filter(lambda el:
-                                         check_pattern_in_tags(required_container,
-                                                               el.image.tags),
-                                         client.containers.list()))
+    interesting_containers = [el for el in client.containers.list()
+                              if check_pattern_in_tags(required_container, el.image.tags)]
 
     logging.info(interesting_containers)
     Witnet_metrics_list = [WitnetMetrics(container) for container in interesting_containers]
