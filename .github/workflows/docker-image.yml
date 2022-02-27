@@ -29,7 +29,7 @@ jobs:
       if: ${{ env.DOCKER_IMAGE_ALREADY_PUSHED != 0 }}
       run: docker build . --file Dockerfile --tag carequinha/prometheus_wit_client:${{ env.VERSION }} --tag carequinha/prometheus_wit_client:latest
     - name: Push the Docker image
-      if: ${{ env.DOCKER_IMAGE_ALREADY_PUSHED != 0 }} && github.event.pull_request.merged == 'true'
+      if: ${{ (env.DOCKER_IMAGE_ALREADY_PUSHED != 0) && (github.event.pull_request.merged == 'true') }}
       run: |
         docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_PASSWORD}} docker.io
         docker push carequinha/prometheus_wit_client:${{ env.VERSION }}
