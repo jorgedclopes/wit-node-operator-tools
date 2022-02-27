@@ -1,0 +1,7 @@
+---
+- hostname: 123.456.789.012
+  username: user1
+  password: "password1"
+- hostname: 345.678.901.345
+  username: user2
+  password: "password2"
