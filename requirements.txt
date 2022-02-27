@@ -1,6 +1,6 @@
 prometheus-client==0.13.1
 docker~=5.0.3
-urllib3~=1.26.8
+urllib3~=1.25.11
 setuptools~=39.0.1
 paramiko~=2.9.2
 PyYAML~=5.4.1
