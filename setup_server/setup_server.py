@@ -59,21 +59,30 @@ def deploy_prometheus_custom_metrics(server: dict,
     is_client_container_running = poll_container(ssh)
 
     if is_client_container_running and overwrite:
-        ssh.exec_command('sudo docker stop prometheus_wit_client')
-        ssh.exec_command('sudo docker container rm prometheus_wit_client')
+        _, stdout, stderr = ssh.exec_command('sudo docker stop prometheus_wit_client')
+        logging.info("Stop Output: {}".format(stdout.readlines()))
+        logging.info("Stop Errput: {}".format(stderr.readlines()))
+
+        _, stdout, stderr = ssh.exec_command('sudo docker container rm prometheus_wit_client')
+        logging.info("rm Output: {}".format(stdout.readlines()))
+        logging.info("rm Errput: {}".format(stderr.readlines()))
         is_client_container_running = False
         logging.info("Deleted prometheus container. Preparing to redeploy.")
         wait_until(lambda s: not poll_container(s), 30, 0.25, ssh)
 
     if not is_client_container_running:
         logging.info('Client not running. Starting...')
+        _, stdout, stderr = ssh.exec_command('sudo docker pull carequinha/prometheus_wit_client:{}'
+                                             .format(version))
+        logging.info("Pull Output: {}".format(stdout.readlines()))
+        logging.info("Pull Errput: {}".format(stderr.readlines()))
         run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
                                             -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
                                             --restart always carequinha/prometheus_wit_client:{}" \
             .format(version)
         _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
-        print("Output: {}".format(stdout.readline()))
-        print("Errput: {}".format(stderr.readline()))
+        logging.info("Output: {}".format(stdout.readline()))
+        logging.info("Errput: {}".format(stderr.readline()))
     else:
         logging.warning('Client already running. Nothing to be done.')
 
