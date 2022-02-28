@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from typing import List
-
+import time
 import docker
 
 import paramiko
@@ -13,6 +13,15 @@ from prometheus_wit_client import version, prometheus_config_file_path
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+
+def wait_until(some_predicate, timeout, period=0.25, *args, **kwargs):
+    must_end = time.time() + timeout
+    while time.time() < must_end:
+        if some_predicate(*args, **kwargs):
+            return True
+        time.sleep(period)
+    return False
 
 
 def config_prometheus(server_list: List[str]):
@@ -47,17 +56,14 @@ def deploy_prometheus_custom_metrics(server: dict,
                 username=server.get('username'),
                 password=server.get('password'))
 
-    get_images_command = "sudo docker container ls --format \"{{.Image}}\""
-    _, stdout, stderr = ssh.exec_command(get_images_command)
-    images_list = stdout.readlines()
-    filtered_var = [image for image in images_list if "prometheus_wit_client" in image]
-    is_client_container_running = bool(filtered_var)
+    is_client_container_running = poll_container(ssh)
 
     if is_client_container_running and overwrite:
         ssh.exec_command('sudo docker stop prometheus_wit_client')
-        ssh.exec_command('sudo docker rm prometheus_wit_client')
+        ssh.exec_command('sudo docker container rm prometheus_wit_client')
         is_client_container_running = False
         logging.info("Deleted prometheus container. Preparing to redeploy.")
+        wait_until(lambda s: not poll_container(s), 30, 0.25, ssh)
 
     if not is_client_container_running:
         logging.info('Client not running. Starting...')
@@ -73,6 +79,15 @@ def deploy_prometheus_custom_metrics(server: dict,
 
     ssh.close()
     return
+
+
+def poll_container(ssh):
+    get_images_command = "sudo docker container ls -a --format \"{{.Image}}\""
+    _, stdout, stderr = ssh.exec_command(get_images_command)
+    images_list = stdout.readlines()
+    filtered_var = [image for image in images_list if "prometheus_wit_client" in image]
+    is_client_container_running = bool(filtered_var)
+    return is_client_container_running
 
 
 def run(port: int,
