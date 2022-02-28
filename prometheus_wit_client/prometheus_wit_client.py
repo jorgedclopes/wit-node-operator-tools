@@ -136,7 +136,7 @@ class WitnetMetrics:
         ))
         self.peer_number.set(peer_number)
 
-        _, output_peers = self._container.exec_run('witnet node peers')
+        _, output_peers = self._container.exec_run('witnet node balance')
         balance = search_from_pattern(output_reputation.decode('utf-8'),
                                       'Confirmed balance:',
                                       ' wits\n')

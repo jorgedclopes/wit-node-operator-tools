@@ -60,12 +60,16 @@ def deploy_prometheus_custom_metrics(server: dict,
 
     if is_client_container_running and overwrite:
         _, stdout, stderr = ssh.exec_command('sudo docker stop prometheus_wit_client')
-        logging.info("Stop Output: {}".format(stdout.readlines()))
-        logging.info("Stop Errput: {}".format(stderr.readlines()))
+        for out in stdout.readlines():
+            logging.info("Stop Output: {}".format(out))
+        for err in stderr.readlines():
+            logging.debug("Stop Errput: {}".format(err))
 
         _, stdout, stderr = ssh.exec_command('sudo docker container rm prometheus_wit_client')
-        logging.info("rm Output: {}".format(stdout.readlines()))
-        logging.info("rm Errput: {}".format(stderr.readlines()))
+        for out in stdout.readlines():
+            logging.info("rm Output: {}".format(out))
+        for err in stderr.readlines():
+            logging.debug("rm Errput: {}".format(err))
         is_client_container_running = False
         logging.info("Deleted prometheus container. Preparing to redeploy.")
         wait_until(lambda s: not poll_container(s), 30, 0.25, ssh)
@@ -74,15 +78,19 @@ def deploy_prometheus_custom_metrics(server: dict,
         logging.info('Client not running. Starting...')
         _, stdout, stderr = ssh.exec_command('sudo docker pull carequinha/prometheus_wit_client:{}'
                                              .format(version))
-        logging.info("Pull Output: {}".format(stdout.readlines()))
-        logging.info("Pull Errput: {}".format(stderr.readlines()))
+        for out in stdout.readlines():
+            logging.debug("Pull Output: {}".format(out))
+        for err in stderr.readlines():
+            logging.debug("Pull Errput: {}".format(err))
         run_prometheus_client_command = "sudo docker run --name prometheus_wit_client -d \
                                             -p 8000:8000 -v /run/docker.sock:/run/docker.sock:ro \
                                             --restart always carequinha/prometheus_wit_client:{}" \
             .format(version)
         _, stdout, stderr = ssh.exec_command(run_prometheus_client_command)
-        logging.info("Output: {}".format(stdout.readline()))
-        logging.info("Errput: {}".format(stderr.readline()))
+        for out in stdout.readlines():
+            logging.info("Run Output: {}".format(out))
+        for err in stderr.readlines():
+            logging.debug("Run Errput: {}".format(err))
     else:
         logging.warning('Client already running. Nothing to be done.')
 
