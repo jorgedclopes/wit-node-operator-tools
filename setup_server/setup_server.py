@@ -54,7 +54,8 @@ def deploy_prometheus_custom_metrics(server: dict,
     ssh.connect(hostname=server.get('hostname'),
                 port=22,
                 username=server.get('username'),
-                password=server.get('password'))
+                password=server.get('password'),
+                timeout=15)
 
     is_client_container_running = poll_container(ssh)
 
