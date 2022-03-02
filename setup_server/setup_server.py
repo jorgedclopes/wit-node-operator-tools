@@ -137,7 +137,12 @@ def run(port: int,
 
     # TODO: add overwrite server option
     for server in servers:
-        deploy_prometheus_custom_metrics(server, overwrite)
+        try:
+            deploy_prometheus_custom_metrics(server, overwrite)
+        except Exception as e:
+            logging.error(e)
+            logging.error("Failed to process the deployment of prometheus custom metric server in {}.".format(server.get('hostname')))
+            continue
     return
 
 
