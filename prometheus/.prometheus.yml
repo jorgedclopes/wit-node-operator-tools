@@ -42,4 +42,4 @@ scrape_configs:
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['192.168.70.143:8000', '192.168.1.177:8000', '45.130.104.48:8000']
+      - targets: ['localhost:8000']

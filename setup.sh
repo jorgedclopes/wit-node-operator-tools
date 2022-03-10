@@ -10,5 +10,6 @@ cp -rf prometheus ~/.prometheus
 
 rm -rf ~/.grafana
 cp -rf grafana ~/.grafana
+rm ~/.grafana/provisioning/datasources/.datasource.yml
 
 docker-compose up -d

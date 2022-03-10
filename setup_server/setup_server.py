@@ -1,6 +1,9 @@
 import logging
 import os
 import shutil
+import string
+
+import numpy as np
 from typing import List
 import time
 import docker
@@ -8,11 +11,32 @@ import docker
 import paramiko
 import yaml
 import argparse
+import bcrypt
 
-from prometheus_wit_client import version, prometheus_config_file_path
+from prometheus_wit_client import version
+
+prometheus_config_origin_file_path = '../prometheus/.prometheus.yml'
+prometheus_config_dest_file_path = '../prometheus/prometheus.yml'
+prometheus_web_file_path = '../prometheus/web.yml'
+grafana_config_origin_file_path = '../grafana/provisioning/datasources/.datasource.yml'
+grafana_config_dest_file_path = '../grafana/provisioning/datasources/datasource.yml'
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+
+def generate_random_password(length: int,
+                             seed: int) -> str:
+    characters = list(string.ascii_letters + string.digits)
+    np.random.seed(seed=seed)
+    np.random.shuffle(characters)
+    password = ''.join(np.random.choice(characters) for _ in range(length))
+    return password
+
+
+def generate_seeded_password(length: int) -> str:
+    return generate_random_password(length,
+                                    np.random.randint(2 ** 32))
 
 
 def wait_until(some_predicate, timeout, period=0.25, *args, **kwargs):
@@ -26,22 +50,51 @@ def wait_until(some_predicate, timeout, period=0.25, *args, **kwargs):
 
 def config_prometheus(server_list: List[str]):
     root_dir = os.path.abspath(os.path.dirname(__file__))
-    prometheus_file = open(os.path.join(root_dir, prometheus_config_file_path), 'r')
-    prometheus_config = yaml.safe_load(prometheus_file)
-    prometheus_file.close()
 
-    logging.info("Prometheus config start.")
-    for c in prometheus_config.get('scrape_configs'):
-        logging.debug("The job's name is {}".format(c.get("job_name")))
-        if c.get("job_name") == 'custom metrics':
-            logging.info("Job found!")
-            c.get("static_configs")[0]['targets'] = server_list
+    password = generate_seeded_password(128)
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-    logging.debug(prometheus_config)
-    logging.info("Prometheus config finish.")
-    prometheus_file = open(os.path.join(root_dir, prometheus_config_file_path), 'w')
-    yaml.dump(prometheus_config, prometheus_file)
-    prometheus_file.close()
+    with open(os.path.join(root_dir, prometheus_config_origin_file_path), 'r') as prometheus_origin_file:
+        prometheus_config = yaml.safe_load(prometheus_origin_file)
+        prometheus_origin_file.close()
+
+        logging.info("Prometheus config start.")
+        for c in prometheus_config.get('scrape_configs'):
+            logging.debug("The job's name is {}".format(c.get("job_name")))
+            if c.get("job_name") == 'custom metrics':
+                logging.info("Job found!")
+                c['static_configs'][0]['targets'] = server_list
+            if c.get("job_name") == 'prometheus':
+                c['basic_auth'] = {'username': 'admin',
+                                   'password': password}
+
+        logging.debug(prometheus_config)
+        logging.info("Prometheus config finish.")
+        with open(os.path.join(root_dir, prometheus_config_dest_file_path), 'w') as prometheus_dest_file:
+            yaml.dump(prometheus_config, prometheus_dest_file)
+
+    # Setup prometheus/grafana security
+    web_data = {'basic_auth_users': {'admin': hashed_password.decode()}}
+    with open(os.path.join(root_dir, prometheus_web_file_path), 'w') as web_file:
+        yaml.dump(web_data, web_file, default_flow_style=False)
+
+    with open(os.path.join(root_dir, grafana_config_origin_file_path)) as dash_origin_file:
+        grafana_dashboard_config = yaml.safe_load(dash_origin_file)
+
+        grafana_dashboard_config['datasources'][0]['basicAuth'] = True
+        grafana_dashboard_config['datasources'][0]['basicAuthUser'] = 'admin'
+        grafana_dashboard_config['datasources'][0]['secureJsonData']['basicAuthPassword'] = password
+
+        grafana_dashboard_config['datasources'][0].pop('jsonData')
+        grafana_dashboard_config['datasources'][0].pop('basicAuthPassword')
+        grafana_dashboard_config['datasources'][0].pop('database')
+        grafana_dashboard_config['datasources'][0].pop('password')
+        grafana_dashboard_config['datasources'][0].pop('user')
+        grafana_dashboard_config['datasources'][0].pop('withCredentials')
+
+        with open(os.path.join(root_dir, grafana_config_dest_file_path), 'w') as dash_dest_file:
+            yaml.dump(grafana_dashboard_config, dash_dest_file, explicit_start=True)
+
     return
 
 
@@ -124,7 +177,7 @@ def run(port: int,
 
     prometheus_dest_dir = os.path.expanduser("~/.prometheus/")
     if os.path.isdir(prometheus_dest_dir):
-        shutil.copy(os.path.join(root_dir, prometheus_config_file_path),
+        shutil.copy(os.path.join(root_dir, prometheus_config_dest_file_path),
                     prometheus_dest_dir)
         logging.info("Prometheus config file copied.")
 
@@ -136,13 +189,13 @@ def run(port: int,
             logging.warning(e)
             pass
 
-    # TODO: add overwrite server option
     for server in servers:
         try:
             deploy_prometheus_custom_metrics(server, overwrite)
         except Exception as e:
             logging.error(e)
-            logging.error("Failed to process the deployment of prometheus custom metric server in {}.".format(server.get('hostname')))
+            logging.error("Failed to process the deployment of prometheus custom metric server in {}."
+                          .format(server.get('hostname')))
             continue
     return
 

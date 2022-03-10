@@ -1,3 +1,7 @@
 .idea
-setup_server/*.yml
 **/*.pyc
+*.egg-info
+prometheus/prometheus.yml
+setup_server/list_of_servers.yml
+grafana/provisioning/datasources/datasource.yml
+prometheus/web.yml
