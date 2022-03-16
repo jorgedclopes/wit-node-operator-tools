@@ -1,5 +1,9 @@
 # Change Log
 
+### 1.2.0 - 1.2.3
+ - Assorted fixes to metric gathering
+ - Setup Documentation improvement.
+
 ### 1.1.1
  - Attempt to fix issue processing peer metric
  
