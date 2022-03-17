@@ -4,6 +4,12 @@ Compilation of tools to monitor Witnet nodes.
 
 ### Basic Setup - How To
 
+Requirements:
+ - docker-compose
+ - pip3
+
+Setup:
+
 1) from this project's `root directory`, open the file `/setup_server/list_of_servers_example.yml`
 2) Keeping the yaml layout pattern present, edit it with the list of servers and respective ssh credentials
 3) save it under `/setup_server/list_of_servers.yml`. For security reasons this file doesn't exist from the get go in this repo
