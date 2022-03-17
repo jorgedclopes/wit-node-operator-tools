@@ -20,6 +20,7 @@ for prometheus and grafana to discover all data sources.
 Grafana will already come with a default dashboard specific to the Witnet node operations.
 
 To access the Grafana dashboard open a browser at `http://localhost:3000` or replace `localhost` by the appropriate IP address.
+Grafana default credentials are `user:pass = admin:admin`. The password can be changed at any time after login. 
 
 ### Project Structure
 
